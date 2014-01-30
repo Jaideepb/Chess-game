@@ -1,0 +1,266 @@
+/* 
+ * Desc: This file contains all the classes required for chess program.
+ */
+
+#include<string>
+#include<string.h>
+#include<map>
+
+using namespace std;
+
+#define NameCat(X) (string((color==BLACK)?"b_":"w_") + X) 
+#define PRINT(X) cout<<X<<" "<<__FUNCTION__<<":"<<__LINE__<<endl
+
+enum Color {
+	BLACK =0,
+	WHITE
+};
+
+enum Status {
+	DEAD  =0,
+	ALIVE 
+};
+
+enum ChessPieces {
+	R1=0,N1,B1,Q,K,B2,N2,R2,
+	p1,p2,p3,p4,p5,p6,p7,p8
+};
+
+typedef struct Position
+{
+	int X;
+	int Y;
+} Position;
+
+
+class Piece {
+protected:
+	string name;	// Name of Piece 
+	int status; 	// Alive or Dead
+	int color;
+//	Square *whichSqr;
+public:
+	Piece(){
+		status=ALIVE;
+	}	
+
+	~Piece(){
+
+	}
+	virtual string getName() {};
+};
+
+class Pawn:public Piece {
+public:
+	Pawn(int color,int id){
+		
+		color = color;
+		name = NameCat("p_") + to_string(id);	
+	}
+	string getName(){
+		return name;
+	}
+};
+
+class Rook:public Piece {
+public:
+	Rook(int color,string id){
+		color = color;
+		name  = NameCat("R_") + id;
+	}
+	string getName(){
+		return name;
+	}
+};
+
+class Knight:public Piece {
+public:
+	Knight(int color,string id){
+		color = color;
+		name = NameCat("K_") + id;
+	}
+	string getName(){
+		return name;
+	}
+};
+
+class Bishop:public Piece {
+public:
+	Bishop(int color,string id){
+		color = color;
+		name = NameCat("B_") + id;
+	}
+	string getName(){
+		return name;
+	}
+};
+
+class Queen:public Piece {
+public:
+	Queen(int color){
+		color = color;
+		name = NameCat("Q");
+	}
+	string getName(){
+		return name;
+	}
+};
+
+class King:public Piece {
+public:
+	King(int color){
+		color=color;
+		name = NameCat("K");
+	}
+	string getName(){
+		return name;
+	}
+};
+
+
+class Square {
+protected:
+	Piece *myPiece;
+	Position *pos;
+	int color;
+public:		
+	Square(Position loc,int color){
+		this->myPiece=NULL;
+		this->pos = new Position{loc.X,loc.Y};
+		color = color;
+	}
+	Piece* getMyPiece() {
+		return myPiece;
+	}	
+	void setMyPiece(Piece *pie) {
+		myPiece = pie;
+	}
+};
+
+class Player;
+
+class Board {
+protected:
+	Square *sqr[64];
+public:
+	Board()
+	{
+		Position tempPos={0,0};
+		int color;
+		for(int i=0;i<8;i++)
+		{	
+			for(int j=0;j<8;j++)
+			{
+				tempPos = {i,j};
+				if( (i+j)%2 == 0)
+					color = BLACK;
+				else
+					color = WHITE;
+
+				sqr[8*i+j] = new Square(tempPos,color);
+			}
+		}	
+	}
+	~Board()
+	{
+		for(int i=0;i<64;i++)
+			delete sqr[i];
+	}
+	void SetSquares(Player& ply);
+	void PrintMe();
+};
+
+class Player {
+protected:
+	map<int, Piece*> mPieces;
+	int mycolor;	
+public:
+	Player(int color){
+		mycolor=color;
+		mPieces[K]  = new King(color);
+		mPieces[Q]  = new Queen(color);
+		mPieces[R1] = new Rook(color,"1");
+		mPieces[R2] = new Rook(color,"2");
+		mPieces[N1] = new Knight(color,"1");
+		mPieces[N2] = new Knight(color,"2");
+		mPieces[B1] = new Bishop(color,"1");
+		mPieces[B2] = new Bishop(color,"2");
+		for(int i=p1;i<=p8;i++)
+			mPieces[i] = new Pawn(color,i-p1);
+	}
+	friend void Board::SetSquares(Player& ply); 
+};
+
+class Game {
+protected:
+	Board  *board;
+	Player *white;
+	Player *black;
+public:
+	Game()
+	{
+		board = new Board();
+		white = new Player(WHITE);
+		black = new Player(BLACK);
+		InitiateBoard(*white);
+		InitiateBoard(*black);
+	}
+	void InitiateBoard(Player& ply);
+	void PrintBoard();
+};
+
+
+void Game::InitiateBoard(Player &ply){
+	board->SetSquares(ply);
+}
+
+void Game::PrintBoard(){
+	board->PrintMe();
+}
+
+void Board::SetSquares(Player& ply) {
+	int j;
+	for(int i=0;i<=1;i++)
+	{
+		PRINT(" here "<<ply.mycolor);
+		if(ply.mycolor==BLACK)	
+			j=i;
+		else
+			j=7-i;	
+		for(int pie=R1;pie<=R2;pie++)
+		{
+
+//			PRINT(ply.mPieces[i*8+pie]->getName());
+			sqr[j*8+(pie%8)]->setMyPiece(ply.mPieces[i*8+pie]);	
+		}	
+	}
+}
+
+void Board::PrintMe() {
+	for(int k=0;k<8;k++)
+		cout<<"________";
+	cout<<endl;
+
+	for(int i=0;i<8;i++)
+	{
+		for(int j=0;j<8;j++)
+		{
+			cout<<"|";
+			Piece *pi = this->sqr[i*8+j]->getMyPiece();
+			if(pi !=NULL)
+			{
+				cout<<" "<<pi->getName()<<"\t";
+			}
+			else
+				cout<<"\t";
+		}
+		cout<<"|";
+		cout<<endl;
+		for(int k=0;k<8;k++)
+			cout<<"________";
+	cout<<endl;
+	}
+	cout << "\033[2;51m text\033[0m\n";
+
+}
+
